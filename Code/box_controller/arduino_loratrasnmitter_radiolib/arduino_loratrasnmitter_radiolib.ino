@@ -16,7 +16,7 @@
 
 // include the library
 #include <RadioLib.h>
-// #include <RFM95.h>
+//#include <RFM95.h> 
 
 // SX1278 has the following connections:
 // NSS pin:   10
@@ -26,11 +26,11 @@
 // SX1278 radio = new Module(10, 2, 9, 3);
 
 // NEW laird code
-Module* module = new Module(10, 2, 9, 3);
-RFM95* radio = new RFM95(module);
-radio->begin();
-radio->beginFSK();
-radio->setFrequency(915.0);
+//Module* module = new Module(10, 2, 9, 3);
+//RFM95* radio = new RFM95(module);
+
+//Mehul Code
+RFM95 radio = new Module(10, 2, 9, 3)
 
 // or using RadioShield
 // https://github.com/jgromes/RadioShield
@@ -43,6 +43,10 @@ void setup() {
   Serial.print(F("[SX1278] Initializing ... "));
   int state = radio.begin();
   if (state == RADIOLIB_ERR_NONE) {
+     // Mehul Code
+    radio.beginFSK();
+    radio.setFrequency(915.0);
+     
     Serial.println(F("success!"));
   } else {
     Serial.print(F("failed, code "));
