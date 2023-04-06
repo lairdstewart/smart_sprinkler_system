@@ -1,27 +1,20 @@
-// rf69 demo tx rx.pde
+// LoRa 9x_TX
 // -*- mode: C++ -*-
-// Example sketch showing how to create a simple messageing client
-// with the RH_RF69 class. RH_RF69 class does not provide for addressing or
-// reliability, so you should only use RH_RF69  if you do not need the higher
+// Example sketch showing how to create a simple messaging client (transmitter)
+// with the RH_RF95 class. RH_RF95 class does not provide for addressing or
+// reliability, so you should only use RH_RF95 if you do not need the higher
 // level messaging abilities.
-// It is designed to work with the other example rf69_server.
-// Demonstrates the use of AES encryption, setting the frequency and modem 
-// configuration
+// It is designed to work with the other example LoRa9x_RX
 
 #include <SPI.h>
 #include <RH_RF95.h>
 
+#define RFM95_CS 10
+#define RFM95_RST 9
+#define RFM95_INT 2
+
 // Change to 434.0 or other frequency, must match RX's freq!
 #define RF95_FREQ 915.0
-
-// Arduino Pins
-
-#define RFM95_INT     3
-#define RFM95_CS      4
-#define RFM95_RST     2
-#define LED           LED_BUILTIN
-
-
 
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
@@ -29,17 +22,13 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 void setup() 
 {
   pinMode(RFM95_RST, OUTPUT);
-  pinMode(13, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
 
-  Serial.begin(115200);
-  while (!Serial) {
-    delay(1);
-  }
-
+  while (!Serial);
+  Serial.begin(9600);
   delay(100);
 
-  Serial.println("Feather LoRa TX Test!");
+  Serial.println("Arduino LoRa TX Test!");
 
   // manual reset
   digitalWrite(RFM95_RST, LOW);
@@ -49,7 +38,6 @@ void setup()
 
   while (!rf95.init()) {
     Serial.println("LoRa radio init failed");
-    Serial.println("Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug info");
     while (1);
   }
   Serial.println("LoRa radio init OK!");
@@ -73,28 +61,24 @@ int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 void loop()
 {
-  digitalWrite(13, HIGH); // new (laird) 
-  delay(3000); // Wait 1 second between transmits, could also 'sleep' here!
-  digitalWrite(13, LOW); // new (laird)
-  Serial.println("Transmitting..."); // Send a message to rf95_server
+  Serial.println("Sending to rf95_server");
+  // Send a message to rf95_server
   
   char radiopacket[20] = "Hello World #      ";
   itoa(packetnum++, radiopacket+13, 10);
   Serial.print("Sending "); Serial.println(radiopacket);
   radiopacket[19] = 0;
   
-  Serial.println("Sending...");
-  delay(10);
+  Serial.println("Sending..."); delay(10);
   rf95.send((uint8_t *)radiopacket, 20);
 
-  Serial.println("Waiting for packet to complete..."); 
-  delay(10);
+  Serial.println("Waiting for packet to complete..."); delay(10);
   rf95.waitPacketSent();
   // Now wait for a reply
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t len = sizeof(buf);
 
-  Serial.println("Waiting for reply...");
+  Serial.println("Waiting for reply..."); delay(10);
   if (rf95.waitAvailableTimeout(1000))
   { 
     // Should be a reply message for us now   
@@ -112,7 +96,7 @@ void loop()
   }
   else
   {
-    Serial.println("No reply, is there a listener around?\n");
+    Serial.println("No reply, is there a listener around?");
   }
-
+  delay(1000);
 }
