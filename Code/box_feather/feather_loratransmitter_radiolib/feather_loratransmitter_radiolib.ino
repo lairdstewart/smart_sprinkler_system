@@ -1,12 +1,14 @@
-
-
 /*
-   RadioLib SX127x Transmit Example
-   This example transmits packets using SX1278 LoRa radio module.
-   Each packet contains up to 256 bytes of data, in the form of:
-    - Arduino String
-    - null-terminated char array (C-string)
-    - arbitrary binary data (byte array)
+   RadioLib SX127x Receive Example
+   This example listens for LoRa transmissions using SX127x Lora modules.
+   To successfully receive data, the following settings have to be the same
+   on both transmitter and receiver:
+    - carrier frequency
+    - bandwidth
+    - spreading factor
+    - coding ratexzx 
+    - sync word
+    - preamble length
    Other modules from SX127x/RFM9x family can also be used.
    For default module settings, see the wiki page
    https://github.com/jgromes/RadioLib/wiki/Default-configuration#sx127xrfm9x---lora-modem
@@ -14,31 +16,21 @@
    https://jgromes.github.io/RadioLib/
 */
 
-
-/*
-Adafruit LoRa module:
-  https://learn.adafruit.com/adafruit-rfm69hcw-and-rfm96-rfm95-rfm98-lora-packet-padio-breakouts/pinouts
-
-
-
-*/
-
 // include the library
-#include <RadioLib.h>
 // https://jgromes.github.io/RadioLib/class_r_f_m95.html // RFM95 api documentation
+#include <RadioLib.h>
 
-// Arduino Uno Wifi Rev2
-#define LED LED_BUILTIN
+#define LED 13 // built in red LED
 
 /* 
 https://jgromes.github.io/RadioLib/class_module.html
 Module(cs, irq, rst, gpio)
-  cs: chip select: arduino pin 4 --> lora module "CS"
-  irq: interrupt: arduino pin 3 --> lora module "G0"`
-  rst: hardware reset: arduino pin 2 --> lora module "RST"
+  cs: chip select: feather pin 8
+  irq: interrupt: feather pin 3
+  rst: hardware reset: feather pin 4
   gipo: additional interrupt gpio (defaults to RADIOLIB_NC) which i assume means not connected
 */ 
-RFM95 radio = new Module(4, 3, 2); 
+RFM95 radio = new Module(8, 3, 4);
 
 // or using RadioShield
 // https://github.com/jgromes/RadioShield
@@ -46,19 +38,12 @@ RFM95 radio = new Module(4, 3, 2);
 
 void setup() {
   Serial.begin(9600);
+  pinMode(LED, OUTPUT);
 
-  // manual reset
-  digitalWrite(2, LOW);
-  delay(10);
-  digitalWrite(2, HIGH);
-  delay(10);
-
-  // initialize RFM95 with default settings
-  Serial.print(F("[RFM95] Initializing ... "));
+  // initialize SX1278 with default settings
+  Serial.print(F("[SX1278] Initializing ... "));
   int state = radio.begin();
   if (state == RADIOLIB_ERR_NONE) {
-    radio.beginFSK();
-    radio.setFrequency(915.0);
     Serial.println(F("success!"));
   } else {
     Serial.print(F("failed, code "));
@@ -118,5 +103,7 @@ void loop() {
   }
 
   // wait for a second before transmitting again
-  delay(3000);
+  digitalWrite(LED, HIGH);
+  delay(1000);
+  digitalWrite(LED, LOW);
 }
