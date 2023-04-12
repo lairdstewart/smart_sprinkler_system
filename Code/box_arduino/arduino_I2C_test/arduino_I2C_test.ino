@@ -1,27 +1,38 @@
 //following Controller Reader from: https://docs.arduino.cc/learn/communication/wire
 #include <Wire.h>
 
+bool debug = 1; 
+
 void setup() {
-  // put your setup code here, to run once:
-  Wire.begin();
-  Serial.begin(9600);
+  Wire.begin(); // join i2c bus
+  Serial.begin(9600); // serial output to console
+}
+
+void select_sensor(int sensor_index) {
+  Wire.beginTransmission(8); 
+  Wire.write(sensor_index); // one byte 
+  Wire.endTransmission(); 
+}
+
+float request_voltage(int sensor_index) {
+  select_sensor(sensor_index); 
+  String dataString;
+  Wire.requestFrom(8, 7); // request 7 bytes of data from peripheral #8 // blocking function. 
+  while (Wire.available()) {
+    char c = Wire.read();
+    dataString = dataString + c;
+  }
+  float result = dataString.toFloat();
+  if(debug) Serial.println(result);
+  return result; 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  String dataString = "";
-  float voltage = 0.0F;
+  // REQUEST SENSOR 1 READING 
+  request_voltage(1); 
+  delay(1000);
 
-  Wire.requestFrom(8, 7);
-  while (Wire.available())
-  {
-    char c = Wire.read();
-    dataString = dataString + c;
-    Serial.print(c);
-  }
-  
-  voltage = dataString.toFloat();
-  Serial.println(voltage);
-
+  // REQUEST SENSOR 2 READING 
+  request_voltage(2); 
   delay(1000);
 }

@@ -20,9 +20,11 @@
 
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
+uint8_t sensor_address = 1; 
 
 void setup()
 {
+  pinMode(A0, INPUT); // sensor reading 
   pinMode(LED, OUTPUT);
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
@@ -74,19 +76,40 @@ void loop()
 
     if (rf95.recv(buf, &len))
     {
+      // Recieve message 
       digitalWrite(LED, HIGH);
       RH_RF95::printBuffer("Received: ", buf, len);
+      // char * msg = (char*) buf;
       Serial.print("Got: ");
-      Serial.println((char*)buf);
-       Serial.print("RSSI: ");
+      // Serial.println(msg);
+      Serial.print("RSSI: ");
       Serial.println(rf95.lastRssi(), DEC);
 
-      // Send a reply
-      uint8_t data[] = "And hello back to you";
-      rf95.send(data, sizeof(data));
-      rf95.waitPacketSent();
-      Serial.println("Sent a reply");
-      digitalWrite(LED, LOW);
+      char message_address = buf[0];
+      Serial.print("buf[0]: "); 
+      Serial.println(buf[0]); 
+      Serial.print("address recieved"); 
+      Serial.println(message_address); 
+      if (buf[0] == sensor_address) {
+        // read sensor
+        int sensorval = analogRead(A0); 
+        Serial.print("sensor val: ");
+        Serial.println(sensorval); 
+        char char_data[5];
+        itoa(sensorval, char_data, 10); // puts integer charachters into a char array (decimal) 
+        
+        uint8_t* data = (uint8_t*) char_data;  // turn char array into byte array 
+
+        // Send a reply
+        // uint8_t data[] = "And hello back to you";
+        rf95.send(data, sizeof(data));
+        rf95.waitPacketSent();
+        Serial.println("Sent a reply");
+        digitalWrite(LED, LOW);
+      }
+
+
+
     }
     else
     {
@@ -94,3 +117,6 @@ void loop()
     }
   }
 }
+
+
+

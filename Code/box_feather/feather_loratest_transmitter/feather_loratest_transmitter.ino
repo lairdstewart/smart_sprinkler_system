@@ -9,94 +9,36 @@
 #include <SPI.h>
 #include <RH_RF95.h>
 
-/* for feather32u4 
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 7
-*/
 
 // for feather m0  
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 3
-
-
-/* for shield 
-#define RFM95_CS 10
-#define RFM95_RST 9
-#define RFM95_INT 7
-*/
-
-/* Feather 32u4 w/wing
-#define RFM95_RST     11   // "A"
-#define RFM95_CS      10   // "B"
-#define RFM95_INT     2    // "SDA" (only SDA/SCL/RX/TX have IRQ!)
-*/
-
-/* Feather m0 w/wing 
-#define RFM95_RST     11   // "A"
-#define RFM95_CS      10   // "B"
-#define RFM95_INT     6    // "D"
-*/
-
-#if defined(ESP8266)
-  /* for ESP w/featherwing */ 
-  #define RFM95_CS  2    // "E"
-  #define RFM95_RST 16   // "D"
-  #define RFM95_INT 15   // "B"
-
-#elif defined(ADAFRUIT_FEATHER_M0) || defined(ADAFRUIT_FEATHER_M0_EXPRESS) || defined(ARDUINO_SAMD_FEATHER_M0)
-  // Feather M0 w/Radio
-  #define RFM95_CS      8
-  #define RFM95_INT     3
-  #define RFM95_RST     4
-
-#elif defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2) || defined(ARDUINO_NRF52840_FEATHER) || defined(ARDUINO_NRF52840_FEATHER_SENSE)
-  #define RFM95_INT     9  // "A"
-  #define RFM95_CS      10  // "B"
-  #define RFM95_RST     11  // "C"
-  
-#elif defined(ESP32)  
-  /* ESP32 feather w/wing */
-  #define RFM95_RST     27   // "A"
-  #define RFM95_CS      33   // "B"
-  #define RFM95_INT     12   //  next to A
-
-#elif defined(ARDUINO_NRF52832_FEATHER)
-  /* nRF52832 feather w/wing */
-  #define RFM95_RST     7   // "A"
-  #define RFM95_CS      11   // "B"
-  #define RFM95_INT     31   // "C"
-  
-#elif defined(TEENSYDUINO)
-  /* Teensy 3.x w/wing */
-  #define RFM95_RST     9   // "A"
-  #define RFM95_CS      10   // "B"
-  #define RFM95_INT     4    // "C"
-#endif
-
-// Change to 434.0 or other frequency, must match RX's freq!
 #define RF95_FREQ 915.0
+#define led 13
+
+// GLOBAL VARIABLES
+bool debug = 1; 
+int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-void setup() 
-{
+void setup() {
   pinMode(RFM95_RST, OUTPUT);
-  pinMode(13, OUTPUT);
+  pinMode(led, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
 
   Serial.begin(115200);
   while (!Serial) {
     delay(1);
   }
-
   delay(100);
+  lora_setup(); 
+}
 
-  Serial.println("Feather LoRa TX Test!");
-
-  // manual reset
+void lora_setup() {
+    // manual reset
   digitalWrite(RFM95_RST, LOW);
   delay(10);
   digitalWrite(RFM95_RST, HIGH);
@@ -124,33 +66,28 @@ void setup()
   rf95.setTxPower(23, false);
 }
 
-int16_t packetnum = 0;  // packet counter, we increment per xmission
+float request_data(byte sensor_index) {
+  send_request(sensor_index); 
+  return receive_data(); 
+}
 
-void loop()
-{
-  digitalWrite(13, HIGH); // new (laird) 
-  delay(3000); // Wait 1 second between transmits, could also 'sleep' here!
-  digitalWrite(13, LOW); // new (laird)
-  Serial.println("Transmitting..."); // Send a message to rf95_server
-  
-  char radiopacket[20] = "Hello World #      ";
-  itoa(packetnum++, radiopacket+13, 10);
-  Serial.print("Sending "); Serial.println(radiopacket);
-  radiopacket[19] = 0;
-  
+void send_request(byte sensor_index) {
+  char radiopacket[1] = {sensor_index}; 
   Serial.println("Sending...");
   delay(10);
   rf95.send((uint8_t *)radiopacket, 20);
-
   Serial.println("Waiting for packet to complete..."); 
   delay(10);
-  rf95.waitPacketSent();
+  rf95.waitPacketSent(); // waiting for entirety of packet to be sent 
+}
+
+float receive_data() {
   // Now wait for a reply
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t len = sizeof(buf);
 
   Serial.println("Waiting for reply...");
-  if (rf95.waitAvailableTimeout(1000))
+  if (rf95.waitAvailableTimeout(2000))
   { 
     // Should be a reply message for us now   
     if (rf95.recv(buf, &len))
@@ -169,5 +106,26 @@ void loop()
   {
     Serial.println("No reply, is there a listener around?\n");
   }
+  return -1.0F; 
+}
+
+void loop() {
+  request_data(1);
+  digitalWrite(led, HIGH); // new (laird) 
+  delay(3000); // Wait 1 second between transmits, could also 'sleep' here!
+  digitalWrite(led, LOW); // new (laird)
+  
+
+  // PREPARE PACKET 
+  // char radiopacket[20] = "Hello World #      "; // doesn't include stop charachter
+  // itoa(packetnum++, radiopacket+13, 10); // write integer packetnum at location 13 in char array 
+  // Serial.print("Sending "); Serial.println(radiopacket);
+  // radiopacket[19] = 0; // stop charachter 
+
+
 
 }
+
+
+
+
