@@ -113,8 +113,8 @@ float request_voltage(int sensor_index) {
   }
   float result = dataString.toFloat();
   if(debug) Serial.println("requested voltage over i2c"); 
-  if(debug) Serial.println(dataString);
-  if(debug) Serial.println(result);
+  if(debug) Serial.print("datastring:"); Serial.println(dataString); 
+  if(debug) Serial.print("result (float)"); Serial.println(result); 
   return result; 
 }
 
@@ -219,12 +219,12 @@ void loop() {
         if (currentLine.endsWith("GET /A")) {
           autoMode = 0;
           relay1 = !relay1;
-          Serial.println("got 00"); 
+          Serial.println("got A (relay1)"); 
         }
         if (currentLine.endsWith("GET /B")) {
           autoMode = 0;
           relay2 = !relay2;
-          Serial.println("got 01"); 
+          Serial.println("got B (relay2)"); 
         }
         if (currentLine.endsWith("GET /E")) {
           autoMode = !autoMode;
